@@ -17,13 +17,12 @@ import java.util.List;
 public class DataLoader implements CommandLineRunner {
 
     private final PerfumeRepository perfumeRepository;
-    // ObjectMapper 필드 제거!
 
     @Override
     public void run(String... args) throws Exception {
         if (perfumeRepository.count() > 0) return;
 
-        ObjectMapper objectMapper = new ObjectMapper(); // 👈 직접 생성
+        ObjectMapper objectMapper = new ObjectMapper();
         InputStream inputStream = new ClassPathResource("ScentData.json").getInputStream();
         List<Perfume> perfumes = objectMapper.readValue(inputStream, new TypeReference<List<Perfume>>() {});
         perfumeRepository.saveAll(perfumes);
