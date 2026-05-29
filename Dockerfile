@@ -1,13 +1,19 @@
-# 1. Base 이미지 지정 (JDK 17 기준)
-FROM openjdk:17-jdk-slim
-
-# 2. 작업 디렉토리 설정
+# 1단계: 빌드 스테이지 (openjdk 대신 지원 중단 없는 공식 이미지 사용)
+FROM eclipse-temurin:17-jdk-alpine AS builder
 WORKDIR /app
+COPY gradlew .
+COPY gradle gradle
+COPY build.gradle .
+COPY settings.gradle .
+COPY src src
+RUN chmod +x ./gradlew
+# bootJAR -> bootJar로 오타 수정 (테스트 코드 제외하고 빌드 속도 향상 옵션 추가)
+RUN ./gradlew bootJar -x test --no-daemon
 
-# 3. 빌드된 JAR 파일을 컨테이너 내부로 복사
-# Gradle 빌드 시 보통 build/libs/ 폴더 안에 -SNAPSHOT.jar 파일이 생성됩니다.
-ARG JAR_FILE=build/libs/*.jar
-COPY ${JAR_FILE} app.jar
-
-# 4. 컨테이너가 실행될 때 실행할 명령어 지정
+# 2단계: 실행 스테이지 (마찬가지로 정상 지원되는 이미지로 교체)
+FROM eclipse-temurin:17-jdk-alpine
+WORKDIR /app
+EXPOSE 8080
+# builder 스테이지에서 설정한 WORKDIR(/app) 경로에 맞춰 JAR 파일 복사
+COPY --from=builder /app/build/libs/*.jar app.jar
 ENTRYPOINT ["java", "-jar", "app.jar"]
